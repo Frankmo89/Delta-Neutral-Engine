@@ -41,6 +41,15 @@ Definido en `.env` como `MAX_POSITION_USDT`. El `PositionSizer` lo lee desde `se
 ### 5. Leverage Conservador
 `LEVERAGE` máximo permitido: 10x (validado en `Settings.__post_init__`). Para la estrategia Delta-Neutral se recomienda 1x (sin apalancamiento) en el perp para igualar el notional del spot.
 
+## Protocolo de Trabajo del Agente (OBLIGATORIO)
+
+1. Antes de cualquier cambio: leer `claude.md` completo y `pending_tasks.md`.
+2. Un cambio lógico = un commit. No mezclar tareas distintas en el mismo commit.
+3. Al terminar cada tarea: actualizar `claude.md` si cambian contratos públicos, firmas de métodos, arquitectura o decisiones de diseño; y marcar `[x]` o añadir la tarea en `pending_tasks.md`.
+4. Nunca tocar `.env`. Nunca hardcodear credenciales ni montos: todo parámetro va en `config/settings.py` leído desde `.env`.
+5. Todo I/O con el exchange es async; métodos internos con prefijo `_`; `from __future__ import annotations` en todos los módulos.
+6. Si un cambio rompe un contrato documentado, actualizar `claude.md` en el MISMO commit.
+
 ---
 
 ## Estado de la Arquitectura (Monorepo)
