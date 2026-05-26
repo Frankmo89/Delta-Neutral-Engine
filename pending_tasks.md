@@ -26,6 +26,7 @@
 ## Bloque C: Rendimiento y Red `[EN PROGRESO]`
 
 - [x] P14 — WebSocket de tickers/funding con caché in-memory y fallback REST por staleness.
+- [x] P13 — Scanner WS con productor único compartido + desconexión limpia: snapshot buffered en `app.state` sin scans duplicados por cliente; handler WS corta limpio ante desconexión sin reenviar por conexión cerrada.
 
 ## Bloque F: UI y UX `[EN PROGRESO]`
 

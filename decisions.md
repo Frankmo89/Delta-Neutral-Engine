@@ -1,5 +1,13 @@
 # Registro de Decisiones y Lecciones de IA
 
+Fecha: 26 de mayo de 2026.
+
+Tema: Scanner WS con productor único y desconexión limpia.
+
+Decisión: El endpoint `/ws/scanner` de la API read-only usa un productor de background único (tarea asyncio) que ejecuta `scanner.scan()` periódicamente y guarda el snapshot en `app.state.scanner_snapshot`. Todos los clientes WS conectados leen ese snapshot compartido sin disparar scans duplicados. El handler WS maneja explícitamente `WebSocketDisconnect` y corta sin intentar reenviar por una conexión ya cerrada.
+
+Regla: NUNCA llamar a `scanner.scan()` desde el handler WS directo (FIX A); el costo se multiplica por número de clientes. NUNCA intentar enviar un mensaje por una conexión cerrada; capturar excepciones de envío y cortar el loop (FIX B). El productor maneja sus propios errores sin morir.
+
 Fecha: 24 de mayo de 2026.
 
 Tema: Frontend y Tailwind.

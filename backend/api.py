@@ -33,9 +33,6 @@ from data.websockets import FundingTickerCache
 from main import SCAN_INTERVAL_SECONDS, get_capital_per_trade_usdt
 from risk.position_sizer import PositionSizer
 
-WS_SCANNER_PUSH_SECONDS: int = 5
-SCANNER_TOP_N: int = 20
-
 
 def _get_linear_symbols_for_ws(exchange: BybitExchange) -> set[str]:
     """Obtiene símbolos linear relevantes para suscribir ticker WS."""
@@ -72,6 +69,7 @@ async def lifespan(app: FastAPI):
     app.state.store = store
     app.state.ticker_cache = ticker_cache
     app.state.order_manager = order_manager
+    app.state.scanner_snapshot = None  # Se llena en la tarea de fondo
 
     try:
         loop = asyncio.get_running_loop()
@@ -87,14 +85,51 @@ async def lifespan(app: FastAPI):
             f"Se usará fallback REST. error={exc}"
         )
 
+    # Iniciar productor de snapshots del scanner en background.
+    # FIX A: un único productor alimenta a todos los clientes WS.
+    async def _scanner_snapshot_producer_task():
+        """Productor de background que ejecuta scanner.scan() periódicamente."""
+        while True:
+            try:
+                df = await loop.run_in_executor(
+                    None, scanner.scan, settings.scanner_top_n
+                )
+                records = [] if df.empty else df.to_dict(orient="records")
+                app.state.scanner_snapshot = {
+                    "type": "scanner_snapshot",
+                    "results": records,
+                    "count": len(records),
+                    "timestamp": datetime.now(tz=timezone.utc).isoformat(),
+                }
+                logger.debug(f"Scanner snapshot actualizado: {len(records)} resultados")
+            except Exception as exc:
+                logger.warning(f"Error en scanner snapshot producer: {exc}")
+                app.state.scanner_snapshot = {
+                    "type": "scanner_error",
+                    "error": str(exc),
+                    "timestamp": datetime.now(tz=timezone.utc).isoformat(),
+                }
+            
+            await asyncio.sleep(settings.ws_scanner_push_seconds)
+
+    producer_task = asyncio.create_task(_scanner_snapshot_producer_task())
+    app.state.scanner_producer_task = producer_task
+
     logger.info(
         "API iniciada en modo solo lectura. Ejecuta main.py en un proceso separado "
-        "para el motor de trading."
+        "para el motor de trading. Scanner snapshot producer iniciado."
     )
 
     try:
         yield
     finally:
+        # Cancelar productor de scanner
+        producer_task.cancel()
+        try:
+            await producer_task
+        except asyncio.CancelledError:
+            pass
+        
         await app.state.ticker_cache.stop()
         logger.info("Shutdown FastAPI detectado. API read-only detenida.")
 
@@ -354,39 +389,42 @@ async def force_delete_position(symbol: str, _: None = Depends(_require_api_acce
 async def ws_scanner(websocket: WebSocket) -> None:
     """
     Stream de oportunidades de scanner para tabla en vivo del frontend.
-    Envía snapshots periódicos con resultados crudos del FundingRateScanner.
+    Lee snapshots compartidos del productor sin ejecutar scans duplicados.
+    
+    FIX A: el snapshot lo genera un productor único en background.
+    FIX B: desconexión limpia sin reenviar por conexión cerrada.
     """
     await websocket.accept()
-
-    scanner = app.state.scanner
-    loop = asyncio.get_running_loop()
-
     logger.info("Cliente conectado a /ws/scanner")
 
     try:
         while True:
-            try:
-                df = await loop.run_in_executor(None, scanner.scan, SCANNER_TOP_N)
-                records = [] if df.empty else df.to_dict(orient="records")
-
-                await websocket.send_json(
-                    {
-                        "type": "scanner_snapshot",
+            # Si el snapshot aún no existe (primer scan no terminó),
+            # envía señal de warming_up.
+            if app.state.scanner_snapshot is None:
+                try:
+                    await websocket.send_json({
+                        "type": "warming_up",
                         "timestamp": datetime.now(tz=timezone.utc).isoformat(),
-                        "count": len(records),
-                        "results": jsonable_encoder(records),
-                    }
-                )
-            except Exception as exc:
-                await websocket.send_json(
-                    {
-                        "type": "scanner_error",
-                        "timestamp": datetime.now(tz=timezone.utc).isoformat(),
-                        "error": str(exc),
-                    }
-                )
+                        "message": "Scanner iniciándose...",
+                    })
+                except Exception as exc:
+                    logger.debug(f"Error enviando warming_up: {exc}. Cliente desconectado.")
+                    break
+            else:
+                # Envía el snapshot actual
+                try:
+                    await websocket.send_json(
+                        jsonable_encoder(app.state.scanner_snapshot)
+                    )
+                except Exception as exc:
+                    logger.debug(f"Error enviando snapshot: {exc}. Cliente desconectado.")
+                    break
 
-            await asyncio.sleep(WS_SCANNER_PUSH_SECONDS)
+            await asyncio.sleep(settings.ws_scanner_push_seconds)
 
     except WebSocketDisconnect:
-        logger.info("Cliente desconectado de /ws/scanner")
+        logger.info("Cliente desconectado de /ws/scanner (WebSocketDisconnect)")
+    except Exception as exc:
+        # FIX B: captura explícita de otros errores de conexión
+        logger.debug(f"Error en /ws/scanner (conexión cerrada o error): {exc}")

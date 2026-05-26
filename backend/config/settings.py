@@ -115,6 +115,15 @@ class Settings:
     hedge_integrity_tolerance: float = field(
         default_factory=lambda: float(os.getenv("HEDGE_INTEGRITY_TOLERANCE", "0.90"))
     )
+    ws_scanner_push_seconds: int = field(
+        default_factory=lambda: int(os.getenv("WS_SCANNER_PUSH_SECONDS", "5"))
+    )
+    scanner_top_n: int = field(
+        default_factory=lambda: int(os.getenv("SCANNER_TOP_N", "20"))
+    )
+    spot_symbols_cache_ttl_seconds: int = field(
+        default_factory=lambda: int(os.getenv("SPOT_SYMBOLS_CACHE_TTL_SECONDS", "300"))
+    )
 
     def __post_init__(self) -> None:
         if self.leverage < 1 or self.leverage > 10:
@@ -151,6 +160,12 @@ class Settings:
             raise ValueError("SPOT_FILL_TOLERANCE debe estar en (0, 1.0].")
         if not (0 < self.hedge_integrity_tolerance <= 1.0):
             raise ValueError("HEDGE_INTEGRITY_TOLERANCE debe estar en (0, 1.0].")
+        if self.ws_scanner_push_seconds < 1:
+            raise ValueError("WS_SCANNER_PUSH_SECONDS debe ser >= 1.")
+        if self.scanner_top_n < 1:
+            raise ValueError("SCANNER_TOP_N debe ser >= 1.")
+        if self.spot_symbols_cache_ttl_seconds < 0:
+            raise ValueError("SPOT_SYMBOLS_CACHE_TTL_SECONDS debe ser >= 0.")
 
 
 # Instancia global — importar desde aquí en el resto del proyecto:

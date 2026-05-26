@@ -12,11 +12,13 @@ Responsabilidades:
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 import pandas as pd
 from loguru import logger
 
+from config.settings import settings
 from core.exchange import BybitExchange
 from data.websockets import FundingTickerCache
 
@@ -42,6 +44,8 @@ class FundingRateScanner:
         self._exchange = exchange
         self._ticker_cache = ticker_cache
         self._ws_stale_after_seconds = ws_stale_after_seconds
+        self._spot_symbols_cache: set[str] | None = None
+        self._spot_symbols_cache_time: float = 0.0
 
     # ------------------------------------------------------------------
     # API pública
@@ -112,10 +116,23 @@ class FundingRateScanner:
         """
         Devuelve el conjunto de símbolos disponibles en el mercado Spot.
         Se usa para filtrar perpetuos que no tienen contraparte negociable en Spot.
+        
+        Cachea el resultado con TTL (SPOT_SYMBOLS_CACHE_TTL_SECONDS) para evitar
+        consultas REST redundantes en cada scan, ya que casi nunca cambia.
         """
+        now = time.time()
+        if (
+            self._spot_symbols_cache is not None
+            and (now - self._spot_symbols_cache_time) < settings.spot_symbols_cache_ttl_seconds
+        ):
+            logger.debug("_get_spot_symbols: usando caché")
+            return self._spot_symbols_cache
+        
         logger.debug("Obteniendo instrumentos Spot para filtro de cross-listing...")
         instruments = self._exchange.get_instruments_info(category="spot")
-        return {inst["symbol"] for inst in instruments}
+        self._spot_symbols_cache = {inst["symbol"] for inst in instruments}
+        self._spot_symbols_cache_time = now
+        return self._spot_symbols_cache
 
     @staticmethod
     def _parse_tickers(tickers: list[dict[str, Any]]) -> pd.DataFrame:
