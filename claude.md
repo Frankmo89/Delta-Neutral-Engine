@@ -137,7 +137,11 @@ funding_bot/
 │   │                           # nextFundingTime/volume24h + timestamp.
 │   │
 │   ├── risk/
-│   │   └── position_sizer.py   # PositionSizer — validación de viabilidad y tamaño.
+│   │   └── position_sizer.py   # PositionSizer — validación por break-even de periodos.
+│   │                           # roundtrip_cost = (taker_fee + slippage) * 2 patas * 2
+│   │                           # breakeven_periods = roundtrip_cost / abs(funding_rate)
+│   │                           # is_viable si breakeven_periods <= settings.max_breakeven_periods
+│   │                           # y position_size_usdt >= settings.min_notional_usdt
 │   │
 │   ├── scripts/
 │   │   ├── calcular_viabilidad.py   # Script manual para testear PositionSizer.
@@ -259,7 +263,7 @@ PositionMonitor.check_active_positions()
 | 4 | `dataclasses` en Settings y ViabilityReport | Inmutabilidad (`frozen=True`), claridad de tipos, sin dependencias extra |
 | 5 | `asyncio.gather` para ejecución paralela | Mínima latencia entre patas; evita Legging Risk |
 | 6 | Testnet por defecto (`BYBIT_TESTNET=true`) | Seguridad: no se puede accidentalmente operar con capital real |
-| 7 | Break-even por periodos para viabilidad | La fricción es un costo único de round-trip y se amortiza por periodos, no con APR anualizado irreal |
+| 7 | Break-even por periodos + umbrales por config | Viabilidad depende de amortizar fricción de round-trip en <= `MAX_BREAKEVEN_PERIODS` y cumplir `MIN_NOTIONAL_USDT` |
 
 ---
 

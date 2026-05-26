@@ -68,7 +68,6 @@ class PositionSizer:
         taker_fee: float = DEFAULT_TAKER_FEE,
         maker_fee: float = DEFAULT_MAKER_FEE,
         slippage: float = DEFAULT_SLIPPAGE_EST,
-        min_net_apr_pct: float = 5.0,
         max_breakeven_periods: float = settings.max_breakeven_periods,
         min_notional_usdt: float = settings.min_notional_usdt,
     ) -> None:
@@ -78,7 +77,6 @@ class PositionSizer:
             taker_fee:         Fee de taker por leg (decimal).
             maker_fee:         Fee de maker por leg (decimal, no usado por defecto).
             slippage:          Slippage estimado por leg (decimal).
-            min_net_apr_pct:   APR neto mínimo requerido para aprobar el trade (%).
             max_breakeven_periods: Máximo de periodos para amortizar la fricción.
             min_notional_usdt: Notional mínimo requerido para operar.
         """
@@ -86,7 +84,6 @@ class PositionSizer:
         self.taker_fee = taker_fee
         self.maker_fee = maker_fee
         self.slippage = slippage
-        self.min_net_apr_pct = min_net_apr_pct
         self.max_breakeven_periods = max_breakeven_periods
         self.min_notional_usdt = min_notional_usdt
 

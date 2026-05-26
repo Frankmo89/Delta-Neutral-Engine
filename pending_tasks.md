@@ -22,6 +22,7 @@
 - [x] Hotfix Pre-Mainnet — `set_leverage` obligatorio en `open_delta_neutral` antes del gather de órdenes; retCode 110043 tratado como éxito silencioso.
 - [x] **P-CRÍTICO Pre-Mainnet** — Verificación de fill real en `open_delta_neutral`: polling de balance spot y short_size linear tras el gather; `retCode=0` dejó de ser criterio suficiente de éxito; rollback automático si cualquier pata no llena.
 - [x] **P-CRÍTICO Pre-Mainnet** — Verificación de integridad del hedge en `PositionMonitor.check_active_positions`: detecta short desnudo (spot < qty * tolerance) y cierra la pata linear inmediatamente antes de evaluar funding.
+- [x] Hotfix Riesgo — Modelo de fricción en `risk/position_sizer.py` corregido a break-even por periodos (sin anualizar costo único), con gate por `MAX_BREAKEVEN_PERIODS` + `MIN_NOTIONAL_USDT` desde settings.
 
 ## Bloque C: Rendimiento y Red `[EN PROGRESO]`
 
