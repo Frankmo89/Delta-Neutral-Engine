@@ -27,6 +27,22 @@
 
 ---
 
+## Tests
+
+Risk and scanner math is covered by pytest. No Bybit connection required.
+
+```bash
+cd backend
+source venv/bin/activate
+pip install -r requirements.txt
+cd ..
+pytest
+```
+
+The suite locks `PositionSizer` (`_gross_apr`, `_breakeven_periods`, `calculate_qty`, viability gates) and `FundingRateScanner._parse_tickers` / `_filter` / `_rank` so a later refactor cannot silently change sizing or ranking.
+
+---
+
 ## 🏛️ System Architecture
 
 The platform operates across three completely decoupled layers:
@@ -79,43 +95,18 @@ Delta-Neutral-Engine/
 ├── claude.md               # Master AI Architecture Rules
 ├── pending_tasks.md        # Sprint Tracker
 └── decisions.md            # Engineering Memory & Bug Fix Logs
+```
 
-⚙️ Installation & Deployment (Linux/Ubuntu)
-Prerequisites
-Python 3.10+
+## Installation & Deployment (Linux/Ubuntu)
 
-Node.js (v20 LTS recommended)
+Prerequisites: Python 3.10+, Node.js v20 LTS, Bybit Testnet API keys.
 
-Bybit Testnet API Keys
-
-1. Clone & Backend Setup
-Bash
-git clone [https://github.com/Frankmo89/Delta-Neutral-Engine.git](https://github.com/Frankmo89/Delta-Neutral-Engine.git)
+```bash
+git clone https://github.com/Frankmo89/Delta-Neutral-Engine.git
 cd Delta-Neutral-Engine/backend
-
-# Create and activate virtual environment
 python3 -m venv venv
 source venv/bin/activate
-
-# Install dependencies
 pip install -r requirements.txt
-
-# Configure Secrets
-nano .env
-# Add: BYBIT_API_KEY=your_key | BYBIT_API_SECRET=your_secret | BYBIT_TESTNET=true
-2. Frontend Setup
-Bash
-cd ../frontend
-npm install
-3. Run the Engine (Three Terminals Required)
-Run these commands in three separate terminal instances:
-
-Terminal 1 (The Brain): cd backend && source venv/bin/activate && python3 main.py
-
-Terminal 2 (The API): cd backend && source venv/bin/activate && uvicorn api:app --host 0.0.0.0 --port 8000
-
-Terminal 3 (The UI): cd frontend && npm run dev -- --host
-
-Access the dashboard from any device on your local network using the IP address provided by Vite in Terminal 3 (e.g., http://192.168.1.X:5173).
+```
 
 Created by Francisco Molina (@Frankmo89)
