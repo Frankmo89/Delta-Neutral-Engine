@@ -27,19 +27,22 @@
 
 ---
 
-## Tests
-
-Risk and scanner math is covered by pytest. No Bybit connection required.
+## Running tests
 
 ```bash
 cd backend
+python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 cd ..
 pytest
 ```
 
-The suite locks `PositionSizer` (`_gross_apr`, `_breakeven_periods`, `calculate_qty`, viability gates) and `FundingRateScanner._parse_tickers` / `_filter` / `_rank` so a later refactor cannot silently change sizing or ranking.
+`pytest.ini` sets `pythonpath = backend` and `testpaths = backend/tests`.
+
+## Testing
+
+The suite covers `PositionSizer` math and viability gates (`_gross_apr`, `_breakeven_periods`, `calculate_qty`, funding / min-notional / max-breakeven checks) and `FundingRateScanner._parse_tickers`, `_filter`, and `_rank`. Tests stub exchange clients and do not call Bybit.
 
 ---
 
