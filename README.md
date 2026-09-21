@@ -1,5 +1,7 @@
 # ⚡ Delta-Neutral Engine
 
+[![tests](https://github.com/Frankmo89/Delta-Neutral-Engine/actions/workflows/tests.yml/badge.svg)](https://github.com/Frankmo89/Delta-Neutral-Engine/actions/workflows/tests.yml)
+
 > **Automated Crypto Arbitrage & Funding Rate Capture System**
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
