@@ -18,3 +18,6 @@ uvicorn[standard]>=0.30.0
 
 # Utilities
 loguru>=0.7.0
+
+# Tests
+pytest>=8.0.0
