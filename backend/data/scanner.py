@@ -152,7 +152,18 @@ class FundingRateScanner:
             except (KeyError, ValueError):
                 continue  # saltar pares con datos incompletos
 
-        df = pd.DataFrame(records)
+        columns = [
+            "symbol",
+            "funding_rate",
+            "next_funding_time",
+            "volume_24h",
+            "last_price",
+        ]
+        df = pd.DataFrame(records, columns=columns)
+        if df.empty:
+            df["funding_rate_pct"] = pd.Series(dtype="float64")
+            df["apr_est"] = pd.Series(dtype="float64")
+            return df
         df["funding_rate_pct"] = df["funding_rate"] * 100
         # APR estimado: rate * liquidaciones_por_día * 365
         df["apr_est"] = df["funding_rate"].abs() * FUNDING_INTERVALS_PER_DAY * 365 * 100
